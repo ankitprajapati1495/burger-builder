@@ -4,6 +4,7 @@ import "./ContectData.css";
 import axios from "../../../axios-orders";
 import Spinner from "../../../components/UI/Spinner/Spinner";
 import Input from "../../../components/UI/Input/Input";
+//import input from "../../../components/UI/Input/Input";
 
 class ContectData extends Component {
   state = {
@@ -15,6 +16,11 @@ class ContectData extends Component {
           placeholder: "Your Name",
         },
         value: "",
+        validation: {
+          required: true,
+        },
+        valid: false,
+        touched: false,
       },
       street: {
         elementType: "input",
@@ -23,6 +29,11 @@ class ContectData extends Component {
           placeholder: "Street",
         },
         value: "",
+        validation: {
+          required: true,
+        },
+        valid: false,
+        touched: false,
       },
       zipCode: {
         elementType: "input",
@@ -31,6 +42,11 @@ class ContectData extends Component {
           placeholder: "Zip Code",
         },
         value: "",
+        validation: {
+          required: true,
+        },
+        valid: false,
+        touched: false,
       },
       country: {
         elementType: "input",
@@ -39,6 +55,11 @@ class ContectData extends Component {
           placeholder: "Country",
         },
         value: "",
+        validation: {
+          required: true,
+        },
+        valid: false,
+        touched: false,
       },
       email: {
         elementType: "input",
@@ -47,6 +68,11 @@ class ContectData extends Component {
           placeholder: "Your email",
         },
         value: "",
+        validation: {
+          required: true,
+        },
+        valid: false,
+        touched: false,
       },
       deliveryMethod: {
         elementType: "select",
@@ -64,11 +90,17 @@ class ContectData extends Component {
 
   orderHandler = (event) => {
     event.preventDefault();
-    console.log(this.props.ingredients);
     this.setState({ loading: true });
+    const formData = {};
+    for (let formElementIdentifier in this.state.orderForm) {
+      formData[formElementIdentifier] = this.state.orderForm[
+        formElementIdentifier
+      ].value;
+    }
     const order = {
       ingredients: this.props.ingredients,
       price: this.props.price,
+      orderDate: formData,
     };
     axios
       .post("/orders.json", order)
@@ -81,23 +113,63 @@ class ContectData extends Component {
       });
   };
 
+  checkValidity = (value, rules) => {
+    let isValid = false;
+    if (rules.required) {
+      isValid = value.trim() !== "" && isValid;
+    }
+    if (rules.minLenght) {
+      isValid = value.lenght >= rules.minLenght && isValid;
+    }
+    if (rules.maxLenght) {
+      isValid = value.lenght <= rules.maxLenght && isValid;
+    }
+    return isValid;
+  };
+
+  inputChangedHandler = (event, inputIndetifier) => {
+    const updatedOrderForm = {
+      ...this.state.orderForm,
+    };
+    const updatedFormElement = {
+      ...updatedOrderForm[inputIndetifier],
+    };
+    updatedFormElement.value = event.target.value;
+    updatedFormElement.valid = this.checkValidity(
+      updatedFormElement.value,
+      updatedFormElement.validation
+    );
+    updatedFormElement.touched = true;
+    updatedOrderForm[inputIndetifier] = updatedFormElement;
+
+     let formIsValid = false
+     for(let inputIndetifier in updatedOrderForm) {
+       formIsValid = updatedOrderForm[inputIndetifier].valid &&  formIsValid;
+     }  
+     this.setState({orderForm : updatedOrderForm , formIsValid : formIsValid})
+  }
+
   render() {
-    const formElementsArray =[];
-    for(let key in this.state.orderForm){
+    const formElementsArray = [];
+    for (let key in this.state.orderForm) {
       formElementsArray.push({
         id: key,
-        config: this.state.orderForm[key]
-      })
+        config: this.state.orderForm[key],
+      });
     }
     let form = (
-      <form>
-        <Input elementType="..." elementConfig="..." />
-        {formElementsArray.map(formElement => (
-          <Input 
+      <form onSubmit={this.orderHandler}>
+        {/* <Input elementType="..." elementConfig="..." /> */}
+        {formElementsArray.map((formElement) => (
+          <Input
             key={formElement.id}
             elementType={formElement.config.elementType}
             elementConfig={formElement.config.elementConfig}
             value={formElement.config.value}
+            invalid={!formElement.config.valid}
+            shouldValidate={formElement.config.validation}
+            touched={formElement.config.touched}
+            changed={(event) => this.inputChangedHandler(event, formElement.id)}
           />
         ))}
         <Button btnType="Success" clicked={this.orderHandler}>
@@ -109,7 +181,6 @@ class ContectData extends Component {
       form = <Spinner />;
     }
     return (
-      
       <div className="ContectData">
         <h4>Enter your Contect Data</h4>
         {form}
